@@ -71,3 +71,91 @@ def pregunta_01():
 
 
     """
+    import os
+    import subprocess
+    import shutil
+    import pandas as pd
+
+
+    # Ruta del archivo .zip
+    zip_path = "files/input.zip"
+
+    # Ruta de extracción
+    extract_dir = "files/input"
+
+    def create_folder(path):
+    # Verificar si la carpeta ya existe y eliminarla
+        if os.path.exists(path):
+            shutil.rmtree(path)  # Eliminar la carpeta existente
+            print(f"Carpeta '{path}' eliminada.")
+
+        # Verificar si existe la carpeta 'input'
+        if not os.path.exists(path):
+            os.makedirs(path)
+            print(f"Carpeta '{path}' creada.")
+
+    create_folder(extract_dir)
+
+    if os.path.exists(zip_path):
+        try:
+            # Listar contenido del archivo .zip (tar en este caso)
+            result = subprocess.run(["tar", "-tf", zip_path], 
+                                    capture_output=True, text=True, 
+                                    check=True)
+            contents = result.stdout.splitlines()
+
+            # Verificar si hay una carpeta raíz llamada "input"
+            has_input_folder = any(item.startswith("files/input/") for item in contents)
+
+            # Si ya hay una carpeta input, extraer directamente en la raíz
+            if has_input_folder:
+                subprocess.run(["tar", "-xf", zip_path, "-C", extract_dir], 
+                            check=True)
+                print(f"Archivo descomprimido directamente en '{extract_dir}'.")
+            else:
+                # Extraer el contenido sin subcarpeta "input"
+                subprocess.run(["tar", "-xf", zip_path, "-C", "files/"], 
+                            check=True)
+                print(f"Archivo descomprimido en '{extract_dir}'.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error al descomprimir el archivo: {e}")
+    else:
+        print(f"El archivo '{zip_path}' no existe.")
+
+    output_dir = "files/output"
+    create_folder(output_dir)
+
+
+    for i in os.listdir(extract_dir):
+        type_folder = os.path.join(extract_dir, i)
+        name = f"{i}_dataset.csv"
+        all_data = []  
+
+        for j in os.listdir(type_folder):
+            sentiment = j
+            sentiment_folder = os.path.join(type_folder, j)
+
+            for k in os.listdir(sentiment_folder):
+                file_path = os.path.join(sentiment_folder, k)
+                
+                # Leer el archivo usando Pandas
+                try:
+                    df = pd.read_csv(file_path, header=None, names=["phrase"], encoding="utf-8")
+                    df["target"] = sentiment  
+                    all_data.append(df)  
+                except Exception as e:
+                    print(f"Error procesando el archivo {file_path}: {e}")
+            
+        # Verificar si el archivo de salida ya existe y eliminarlo si es necesario
+        output_file = os.path.join(output_dir, f"{i}_dataset.csv")
+        if os.path.exists(output_file):
+            os.remove(output_file)  
+
+        if all_data:
+            final_df = pd.concat(all_data, ignore_index=True)
+            output_file = os.path.join(output_dir, name)
+            final_df.to_csv(output_file, index=False, encoding="utf-8")
+            print(f"Archivo guardado: {output_file}")
+
+if __name__ == "__main__":
+    print(pregunta_01())
