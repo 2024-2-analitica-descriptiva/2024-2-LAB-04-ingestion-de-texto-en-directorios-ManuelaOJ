@@ -72,9 +72,9 @@ def pregunta_01():
 
     """
     import os
-    import subprocess
     import shutil
     import pandas as pd
+    import zipfile
 
 
     # Ruta del archivo .zip
@@ -87,41 +87,18 @@ def pregunta_01():
     # Verificar si la carpeta ya existe y eliminarla
         if os.path.exists(path):
             shutil.rmtree(path)  # Eliminar la carpeta existente
-            print(f"Carpeta '{path}' eliminada.")
 
         # Verificar si existe la carpeta 'input'
         if not os.path.exists(path):
             os.makedirs(path)
-            print(f"Carpeta '{path}' creada.")
+
 
     create_folder(extract_dir)
 
-    if os.path.exists(zip_path):
-        try:
-            # Listar contenido del archivo .zip (tar en este caso)
-            result = subprocess.run(["tar", "-tf", zip_path], 
-                                    capture_output=True, text=True, 
-                                    check=True)
-            contents = result.stdout.splitlines()
-
-            # Verificar si hay una carpeta raíz llamada "input"
-            has_input_folder = any(item.startswith("files/input/") for item in contents)
-
-            # Si ya hay una carpeta input, extraer directamente en la raíz
-            if has_input_folder:
-                subprocess.run(["tar", "-xf", zip_path, "-C", extract_dir], 
-                            check=True)
-                print(f"Archivo descomprimido directamente en '{extract_dir}'.")
-            else:
-                # Extraer el contenido sin subcarpeta "input"
-                subprocess.run(["tar", "-xf", zip_path, "-C", "files/"], 
-                            check=True)
-                print(f"Archivo descomprimido en '{extract_dir}'.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error al descomprimir el archivo: {e}")
-    else:
-        print(f"El archivo '{zip_path}' no existe.")
-
+    with zipfile.ZipFile(zip_path , "r") as zip_ref:
+        # Extract all the contents to the specified directory
+        zip_ref.extractall(zip_path .split("/")[0])
+        
     output_dir = "files/output"
     create_folder(output_dir)
 
